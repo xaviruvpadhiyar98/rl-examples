@@ -379,13 +379,13 @@ correct_actions = [
 ]
 
 
-class CustomEnv(gym.Env):
+class PatternMatchingEnv(gym.Env):
     """
     Custom environment for OpenAI Gym with discrete actions and a 3x3 matrix observation space.
     """
 
     def __init__(self):
-        super(CustomEnv, self).__init__()
+        super(PatternMatchingEnv, self).__init__()
 
         # Define a discrete action space ranging from 0 to 2 (A, B, C)
         self.action_space = spaces.Discrete(3)
@@ -462,15 +462,17 @@ class CustomEnv(gym.Env):
 
 
 if __name__ == "__main__":
+    import json
     from stable_baselines3 import PPO, DQN, A2C
     from stable_baselines3.common.env_util import make_vec_env
 
     # Initialize the environment
-    env = CustomEnv
-    eval_env = CustomEnv
+    env = PatternMatchingEnv
+    eval_env = PatternMatchingEnv
     num_envs = 16
     eval_envs = 2
-    model_name = "ppo"
+    model_name = "dqn"
+    timestamp = 400_000
     # Vectorize environment for PPO
     vec_env = make_vec_env(env, n_envs=num_envs)
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
@@ -482,7 +484,7 @@ if __name__ == "__main__":
     }[model_name]
 
     # Train the model
-    model.learn(total_timesteps=1_000_000, progress_bar=True)
+    model.learn(total_timesteps=timestamp, progress_bar=True)
 
     # Test the model
     # print(evaluate_policy(model, eval_vec_env, deterministic=True))
@@ -493,12 +495,14 @@ if __name__ == "__main__":
         obs, rewards, dones, infos = eval_vec_env.step(action)
         for i in range(eval_envs):
             if dones[i]:
-                print(
-                    f"Model: {model_name}, "
-                    f"Env: {i}, "
-                    f"Correct Actions: {infos[i]['correct_action']}, "
-                    f"Incorrect Actions: {infos[i]['incorrect_actions']}, "
-                    f"Correct Streak: {infos[i]['correct_streak']}, "
-                    f"Ending Reward: {infos[i]['episode']['r']} "
-                )
+                result = {
+                    "Model": model_name,
+                    "Env": i,
+                    "Timestamp": timestamp,
+                    "Correct Actions": infos[i]['correct_action'],
+                    "Incorrect Actions": infos[i]['incorrect_actions'],
+                    "Correct Streak": infos[i]['correct_streak'],
+                    "Ending Reward": infos[i]['episode']['r'],
+                }
+                print(json.dumps(result))
                 counter += 1
