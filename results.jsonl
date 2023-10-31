@@ -16,3 +16,15 @@
 {"Model": "dqn", "Env": 1, "Timestamp": 100000, "Correct Actions": 343, "Incorrect Actions": 27, "Correct Streak": 33, "Ending Reward": 28194.332265}
 {"Model": "dqn", "Env": 0, "Timestamp": 200000, "Correct Actions": 339, "Incorrect Actions": 31, "Correct Streak": 22, "Ending Reward": 20956.69855}
 {"Model": "dqn", "Env": 1, "Timestamp": 200000, "Correct Actions": 340, "Incorrect Actions": 30, "Correct Streak": 54, "Ending Reward": 66608.22423}
+{"Model": "dqn", "Env": 0, "Timestamp": 400000, "Correct Actions": 342, "Incorrect Actions": 28, "Correct Streak": 5, "Ending Reward": 52799.06265}
+{"Model": "dqn", "Env": 1, "Timestamp": 400000, "Correct Actions": 339, "Incorrect Actions": 31, "Correct Streak": 5, "Ending Reward": 37427.280761}
+{"Model": "dqn", "Env": 0, "Timestamp": 600000, "Correct Actions": 334, "Incorrect Actions": 36, "Correct Streak": 22, "Ending Reward": 13640.590369}
+{"Model": "dqn", "Env": 1, "Timestamp": 600000, "Correct Actions": 340, "Incorrect Actions": 30, "Correct Streak": 31, "Ending Reward": 24939.232316}
+{"Model": "dqn", "Env": 0, "Timestamp": 800000, "Correct Actions": 340, "Incorrect Actions": 30, "Correct Streak": 15, "Ending Reward": 32222.049027}
+{"Model": "dqn", "Env": 1, "Timestamp": 800000, "Correct Actions": 343, "Incorrect Actions": 27, "Correct Streak": 15, "Ending Reward": 34771.952211}
+{"Model": "dqn", "Env": 0, "Timestamp": 1000000, "Correct Actions": 336, "Incorrect Actions": 34, "Correct Streak": 35, "Ending Reward": 26784.258979}
+{"Model": "dqn", "Env": 1, "Timestamp": 1000000, "Correct Actions": 335, "Incorrect Actions": 35, "Correct Streak": 35, "Ending Reward": 27885.676696}
+{"Model": "dqn", "Env": 0, "Timestamp": 2000000, "Correct Actions": 341, "Incorrect Actions": 29, "Correct Streak": 54, "Ending Reward": 68707.925111}
+{"Model": "dqn", "Env": 1, "Timestamp": 2000000, "Correct Actions": 343, "Incorrect Actions": 27, "Correct Streak": 54, "Ending Reward": 68490.36461}
+{"Model": "dqn", "Env": 0, "Timestamp": 10000000, "Correct Actions": 333, "Incorrect Actions": 37, "Correct Streak": 2, "Ending Reward": 38667.495957}
+{"Model": "dqn", "Env": 1, "Timestamp": 10000000, "Correct Actions": 335, "Incorrect Actions": 35, "Correct Streak": 48, "Ending Reward": 47868.151089}
