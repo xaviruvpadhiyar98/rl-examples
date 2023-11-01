@@ -1,382 +1,9 @@
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
-
+from data.actions import correct_actions
+from data.ob_space import obs
 np.random.seed(123)
-
-correct_actions = [
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "BUY",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "SELL",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-    "HOLD",
-]
 
 
 class PatternMatchingEnv(gym.Env):
@@ -391,16 +18,17 @@ class PatternMatchingEnv(gym.Env):
         self.action_space = spaces.Discrete(3)
 
         # Define an observation space, a 3x3 matrix filled with random values
-        self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(3, 3), dtype=np.float32
-        )
+        low = min(obs) - 100
+        high = max(obs) + 100
+        self.observation_space = spaces.Box(low=low, high=high, shape=(1,), dtype=np.float32)
 
         # Define a list of length 400 with random distribution of 'A', 'B', 'C'
         self.step_sequence = correct_actions
 
-        self.all_states = [
-            np.random.random((3, 3)) for _ in range(len(self.step_sequence))
-        ]
+        # self.all_states = [
+        #     np.random.random((3, 3)) for _ in range(len(self.step_sequence))
+        # ]
+        self.all_states = obs
         self.action_map = {0: "BUY", 1: "HOLD", 2: "SELL"}
 
         # Current step in the environment
@@ -424,24 +52,23 @@ class PatternMatchingEnv(gym.Env):
         done = False
         truncation = False
 
-        step_weight = (self.current_step + 1) / len(self.step_sequence)
+        step_weight = 1 + (self.current_step / (len(self.step_sequence) - 1))
 
         if action_char == self.step_sequence[self.current_step]:
             self.correct_streak += 1
-            reward = (1.0 + self.correct_streak**2) * step_weight
+            reward = step_weight * (2.0 + self.correct_streak)  
             self.took_correct_action += 1
         else:
             self.took_incorrect_actions += 1
-            reward = -2.0 * step_weight
+            reward = -20 * step_weight
             self.correct_streak = 0
-            # truncation = True
 
         self.current_step += 1
         self.state = self.all_states[self.current_step]
 
         done = self.current_step >= len(self.step_sequence) - 1
         if done:
-            reward += 10 * (1 - (self.took_incorrect_actions / self.current_step))
+            reward += 5 * (self.took_correct_action / max(1, self.current_step))
 
         info = {
             "correct_action": self.took_correct_action,
@@ -462,29 +89,26 @@ class PatternMatchingEnv(gym.Env):
 
 
 def objective(trial):
-    model_name = "dqn"
+    model_name = "a2c"
     device = "auto"
     if model_name == "a2c":
         device = "cpu"
-
-
 
     env = PatternMatchingEnv
     eval_env = PatternMatchingEnv
 
     num_envs = 16
     eval_envs = 16
-    timestamp = 100_000
+    timestamp = 500_000
 
     vec_env = make_vec_env(env, n_envs=num_envs)
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
 
     hp = HYPERPARAMS_SAMPLER[model_name](trial)
-    hp.update({"env": vec_env, "device": device, "policy":"MlpPolicy"})
+    hp.update({"env": vec_env, "device": device, "policy": "MlpPolicy"})
 
-    model = {"ppo": PPO,"dqn": DQN,"a2c": A2C}[model_name](**hp)
+    model = {"ppo": PPO, "dqn": DQN, "a2c": A2C}[model_name](**hp)
     model.learn(total_timesteps=timestamp, progress_bar=True)
-
 
     counter = 0
     correct_actions = []
@@ -498,17 +122,16 @@ def objective(trial):
                     "Model": model_name,
                     "Env": i,
                     "Timestamp": timestamp,
-                    "Correct Actions": infos[i]['correct_action'],
-                    "Incorrect Actions": infos[i]['incorrect_actions'],
-                    "Correct Streak": infos[i]['correct_streak'],
-                    "Ending Reward": infos[i]['episode']['r'],
+                    "Correct Actions": infos[i]["correct_action"],
+                    "Incorrect Actions": infos[i]["incorrect_actions"],
+                    "Correct Streak": infos[i]["correct_streak"],
+                    "Ending Reward": infos[i]["episode"]["r"],
                 }
-                correct_actions.append(infos[i]['correct_action'])
+                correct_actions.append(infos[i]["correct_action"])
                 print(json.dumps(result))
                 counter += 1
     correct_actions.sort(reverse=True)
     return correct_actions[0]
-
 
 
 if __name__ == "__main__":
@@ -520,11 +143,12 @@ if __name__ == "__main__":
     from optuna.samplers import TPESampler
     from hyperparams_opt import HYPERPARAMS_SAMPLER
 
-
     N_STARTUP_TRIALS = 100
     N_TRIALS = 100
     sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
-    study = create_study(sampler=sampler, direction="maximize", pruner=HyperbandPruner())
+    study = create_study(
+        sampler=sampler, direction="maximize", pruner=HyperbandPruner()
+    )
     try:
         study.optimize(objective, n_trials=N_TRIALS, show_progress_bar=True)
     except KeyboardInterrupt:
@@ -543,7 +167,6 @@ if __name__ == "__main__":
     print("  User attrs:")
     for key, value in trial.user_attrs.items():
         print("    {}: {}".format(key, value))
-
 
     # # Initialize the environment
     # env = PatternMatchingEnv
