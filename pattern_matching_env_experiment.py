@@ -22,11 +22,14 @@ def main():
     vec_env = make_vec_env(env, n_envs=num_envs)
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
 
-    model = {
-        "ppo": PPO("MlpPolicy", vec_env, verbose=2),
-        "dqn": DQN("MlpPolicy", vec_env, verbose=2),
-        "a2c": A2C("MlpPolicy", vec_env, verbose=2, device="cpu"),
-    }[model_name]
+    if Path(model_name+".zip").exists():
+        model = PPO.load(model_name, vec_env, print_system_info=True)
+    else:
+        model = {
+            "ppo": PPO("MlpPolicy", vec_env, verbose=2),
+            "dqn": DQN("MlpPolicy", vec_env, verbose=2),
+            "a2c": A2C("MlpPolicy", vec_env, verbose=2, device="cpu"),
+        }[model_name]
 
     model.learn(total_timesteps=timestamp, progress_bar=True)
 
