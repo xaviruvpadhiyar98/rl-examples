@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Union
 
 import numpy as np
 import optuna
@@ -7,7 +7,6 @@ from stable_baselines3.common.noise import (
     OrnsteinUhlenbeckActionNoise,
 )
 from torch import nn as nn
-from typing import Any, Callable, Dict, Union
 
 
 def linear_schedule(initial_value: Union[float, str]) -> Callable[[float], float]:

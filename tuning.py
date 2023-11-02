@@ -1,11 +1,12 @@
 import gymnasium as gym
-from gymnasium import spaces
 import numpy as np
+from gymnasium import spaces
+
 from data.actions import correct_actions
 from data.ob_space import obs
 from envs.pattern_matching_env import PatternMatchingEnv
-np.random.seed(123)
 
+np.random.seed(123)
 
 
 def objective(trial):
@@ -19,7 +20,7 @@ def objective(trial):
 
     num_envs = 32
     eval_envs = 16
-    timestamp = 1_000_000
+    timestamp = 2_000_000
 
     vec_env = make_vec_env(env, n_envs=num_envs)
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
@@ -49,11 +50,13 @@ def objective(trial):
 
 if __name__ == "__main__":
     import json
-    from stable_baselines3 import PPO, DQN, A2C
-    from stable_baselines3.common.env_util import make_vec_env
+
     from optuna import Trial, create_study
     from optuna.pruners import HyperbandPruner
     from optuna.samplers import TPESampler
+    from stable_baselines3 import A2C, DQN, PPO
+    from stable_baselines3.common.env_util import make_vec_env
+
     from hyperparams_opt import HYPERPARAMS_SAMPLER
 
     N_STARTUP_TRIALS = 100
