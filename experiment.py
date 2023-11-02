@@ -57,7 +57,7 @@ class TrainingCallback(BaseCallback):
         results = []
         for i in range(len(infos)):
             if "episode" in infos[i]:
-                if infos[i]["correct_actions"] > 40:
+                if infos[i]["correct_actions"] > 2:
                     results.append(infos[i])
                     # print("train", i, infos[i])
                     self.test()
@@ -82,7 +82,10 @@ def main():
     vec_env = make_vec_env(env, n_envs=num_envs)
 
     if Path(model_name + ".zip").exists():
-        model = A2C.load(model_name, vec_env, print_system_info=True, device="cpu")
+        model = {
+            "a2c": A2C.load(model_name, vec_env, print_system_info=True, device="cpu"),
+            "ppo": PPO.load(model_name, vec_env, print_system_info=True, device="auto")
+        }[model_name]
     else:
         model = {
             "ppo": PPO("MlpPolicy", vec_env, verbose=2),

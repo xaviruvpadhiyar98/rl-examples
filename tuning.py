@@ -31,21 +31,42 @@ def objective(trial):
     model = {"ppo": PPO, "dqn": DQN, "a2c": A2C}[model_name](**hp)
     model.learn(total_timesteps=timestamp, progress_bar=True)
 
-    counter = 0
-    correct_actions = []
+
+    eval_env = PatternMatchingEnv
+    eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
+    eval_model = A2C(policy="MlpPolicy", env=eval_vec_env, device="cpu")
+    eval_model.set_parameters(model.get_parameters())
+
+    done_counter = 0
     obs = eval_vec_env.reset()
-    while counter < eval_envs:
-        action, _ = model.predict(obs, deterministic=False)
+    results = []
+    while done_counter < eval_envs:
+        action, _ = eval_model.predict(obs, deterministic=False)
         obs, rewards, dones, infos = eval_vec_env.step(action)
-        for i in range(eval_envs):
-            result = infos[i].copy()
-            result.update({"model": model_name, "env_id": i, "timestamp": timestamp})
-            correct_actions.append(result["correct_action"])
+        for i in range(len(infos)):
             if dones[i]:
-                print(infos[i])
-                counter += 1
-    correct_actions.sort(reverse=True)
-    return correct_actions[0]
+                results.append(infos[i])
+                done_counter += 1
+
+    results = sorted(results, key=lambda x: x["correct_actions"], reverse=True)
+    best_env = results[0]
+    return best_env["correct_actions"]
+
+    # counter = 0
+    # correct_actions = []
+    # obs = eval_vec_env.reset()
+    # while counter < eval_envs:
+    #     action, _ = model.predict(obs, deterministic=False)
+    #     obs, rewards, dones, infos = eval_vec_env.step(action)
+    #     for i in range(eval_envs):
+    #         result = infos[i].copy()
+    #         result.update({"model": model_name, "env_id": i, "timestamp": timestamp})
+    #         correct_actions.append(result["correct_action"])
+    #         if dones[i]:
+    #             print(infos[i])
+    #             counter += 1
+    # correct_actions.sort(reverse=True)
+    # return correct_actions[0]
 
 
 if __name__ == "__main__":
