@@ -10,7 +10,7 @@ np.random.seed(123)
 
 
 def objective(trial):
-    model_name = "a2c"
+    model_name = "ppo"
     device = "auto"
     if model_name == "a2c":
         device = "cpu"
@@ -20,7 +20,7 @@ def objective(trial):
 
     num_envs = 32
     eval_envs = 16
-    timestamp = 2_000_000
+    timestamp = 100_000
 
     vec_env = make_vec_env(env, n_envs=num_envs)
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
@@ -31,10 +31,9 @@ def objective(trial):
     model = {"ppo": PPO, "dqn": DQN, "a2c": A2C}[model_name](**hp)
     model.learn(total_timesteps=timestamp, progress_bar=True)
 
-
     eval_env = PatternMatchingEnv
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
-    eval_model = A2C(policy="MlpPolicy", env=eval_vec_env, device="cpu")
+    eval_model = {"ppo": PPO, "dqn": DQN, "a2c": A2C}[model_name](**hp)
     eval_model.set_parameters(model.get_parameters())
 
     done_counter = 0
@@ -80,7 +79,7 @@ if __name__ == "__main__":
 
     from hyperparams_opt import HYPERPARAMS_SAMPLER
 
-    N_STARTUP_TRIALS = 100
+    N_STARTUP_TRIALS = 200
     N_TRIALS = 100
     sampler = TPESampler(n_startup_trials=N_STARTUP_TRIALS)
     study = create_study(

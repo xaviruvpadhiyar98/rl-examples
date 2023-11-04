@@ -10,13 +10,15 @@ import torch.nn as nn
 
 from envs.pattern_matching_env import PatternMatchingEnv
 from hyperparams_opt import linear_schedule
+from copy import deepcopy
 
 np.random.seed(123)
 
 
 class TrainingCallback(BaseCallback):
-    def __init__(self):
+    def __init__(self, eval_model):
         super().__init__()
+        self.eval_model = eval_model
         self.do_eval = False
 
     def test(self):
@@ -24,14 +26,13 @@ class TrainingCallback(BaseCallback):
 
         eval_env = PatternMatchingEnv
         eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
-        eval_model = A2C(policy="MlpPolicy", env=eval_vec_env, device="cpu")
-        eval_model.set_parameters(self.model.get_parameters())
+        self.eval_model.set_parameters(self.model.get_parameters())
 
         done_counter = 0
         obs = eval_vec_env.reset()
         results = []
         while done_counter < eval_envs:
-            action, _ = eval_model.predict(obs, deterministic=False)
+            action, _ = self.eval_model.predict(obs, deterministic=False)
             obs, rewards, dones, infos = eval_vec_env.step(action)
             for i in range(len(infos)):
                 if dones[i]:
@@ -76,19 +77,29 @@ class TrainingCallback(BaseCallback):
 def main():
     env = PatternMatchingEnv
     num_envs = 32
-    model_name = "ppo"
-    timestamp = 1_000_000
+    model_name = "a2c"
+    timestamp = 10_000_000
 
     vec_env = make_vec_env(env, n_envs=num_envs)
 
     if Path(model_name + ".zip").exists():
         model = {
             "a2c": A2C.load(model_name, vec_env, print_system_info=True, device="cpu"),
-            "ppo": PPO.load(model_name, vec_env, print_system_info=True, device="auto")
+            "ppo": PPO.load(model_name, vec_env, print_system_info=True, device="auto"),
         }[model_name]
     else:
         model = {
-            "ppo": PPO("MlpPolicy", vec_env, verbose=2),
+            "ppo": PPO(
+                "MlpPolicy",
+                vec_env,
+                verbose=2,
+                ent_coef=0.01,
+                policy_kwargs=dict(
+                    net_arch=dict(pi=[64, 256, 64], vf=[64, 256, 64]),
+                    activation_fn=nn.Tanh,
+                    ortho_init=True,
+                ),
+            ),
             "dqn": DQN("MlpPolicy", vec_env, verbose=2),
             "a2c": A2C(
                 policy="MlpPolicy",
@@ -111,9 +122,10 @@ def main():
             ),
         }[model_name]
 
-
+    eval_model = deepcopy(model)
+    eval_model.policy.set_training_mode(False)
     model.learn(
-        total_timesteps=timestamp, progress_bar=True, callback=TrainingCallback()
+        total_timesteps=timestamp, progress_bar=True, callback=TrainingCallback(eval_model)
     )
 
     # counter = 0
