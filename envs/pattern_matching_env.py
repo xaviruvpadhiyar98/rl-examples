@@ -41,15 +41,20 @@ class PatternMatchingEnv(gym.Env):
         action_char = self.action_map[action]
         expected_action = self.correct_actions[self.current_step]
 
-        if action_char != "HOLD":
-            reward += 1000
+        if action_char == "BUY" or action_char == "SELL":
+            reward += 50
+
+        if action_char == "HOLD":
+            reward -= 100
 
         if action_char == expected_action:
             self.took_correct_actions += 1
+            reward += 500 if action_char in ["BUY", "SELL"] else 0.001
         else:
+            # reward -= 50 if action_char == "HOLD" else 200
             reward -= 100_000
             self.took_incorrect_actions += 1
-            truncated = False
+            truncated = True
 
         info = {
             "seed": self.seed,
@@ -64,6 +69,8 @@ class PatternMatchingEnv(gym.Env):
 
         done = self.current_step >= len(self.all_states) - 1
         if done:
+            reward += max(0, 10000 - (self.took_incorrect_actions * 100))
+            reward += self.took_correct_actions * 10
             return self.state, reward, done, truncated, info
         
         self.current_step += 1
