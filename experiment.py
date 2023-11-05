@@ -73,12 +73,16 @@ class TrainingCallback(BaseCallback):
             "train/best_env_correct_actions", best_env["correct_actions"]
         )
         return True
+    
+    def _on_training_end(self) -> None:
+        self.test()
+        return True
 
 
 def main():
     env = PatternMatchingEnv
     num_envs = 32
-    model_name = "ppo
+    model_name = "ppo"
     timestamp = 2_000_000
 
     vec_env = make_vec_env(env, n_envs=num_envs)
