@@ -19,8 +19,8 @@ class PatternMatchingEnv(gym.Env):
         super(PatternMatchingEnv, self).__init__()
 
         self.action_space = spaces.Discrete(3)
-        low = -np.inf
-        high = np.inf
+        low = -1
+        high = 1
         self.observation_space = spaces.Box(
             low=low, high=high, shape=(18,), dtype=np.float32
         )
@@ -41,17 +41,14 @@ class PatternMatchingEnv(gym.Env):
         action_char = self.action_map[action]
         expected_action = self.correct_actions[self.current_step]
 
-        if action_char == "HOLD":
-            reward -= 1000
-        else:
-            reward += 5
-
         if action_char == expected_action:
             self.took_correct_actions += 1
-            reward += 5 if action_char in ["BUY", "SELL"] else 0
+            reward += 1
+            # if action_char == "SELL":
+            # reward += 1 if action_char in ["BUY", "SELL"] else 0
         else:
             # reward -= 50 if action_char == "HOLD" else 200
-            reward -= 100_000
+            reward = -1
             self.took_incorrect_actions += 1
             truncated = True
 

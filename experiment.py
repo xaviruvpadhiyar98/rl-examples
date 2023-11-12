@@ -6,6 +6,7 @@ from stable_baselines3 import A2C, DQN, PPO
 from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
+from stable_baselines3.common.vec_env import VecNormalize
 import torch.nn as nn
 
 from envs.pattern_matching_env import PatternMatchingEnv
@@ -41,6 +42,7 @@ class TrainingCallback(BaseCallback):
 
         results = sorted(results, key=lambda x: x["correct_actions"], reverse=True)
         best_env = results[0]
+        print(best_env)
         self.logger.record("trade/best_env_index", best_env["current_step"])
         self.logger.record(
             "trade/best_env_correct_actions", best_env["correct_actions"]
@@ -81,11 +83,12 @@ class TrainingCallback(BaseCallback):
 
 def main():
     env = PatternMatchingEnv
-    num_envs = 32
+    num_envs = 64
     model_name = "ppo"
-    timestamp = 2_000_000
+    timestamp = 6_000_000
 
-    vec_env = make_vec_env(env, n_envs=num_envs)
+    vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs))
+
 
     if Path(model_name + ".zip").exists():
         model = {
@@ -98,37 +101,39 @@ def main():
                 "MlpPolicy",
                 vec_env,
                 verbose=2,
-                ent_coef=0.01,
-                policy_kwargs=dict(
-                    net_arch=dict(pi=[64, 256, 64], vf=[64, 256, 64]),
-                    activation_fn=nn.Tanh,
-                    ortho_init=True,
-                ),
+                ent_coef=0.2,
+                # policy_kwargs=dict(
+                #     net_arch=dict(pi=[64, 128, 256, 128, 64], vf=[64, 128, 256, 128, 64]),
+                #     activation_fn=nn.Tanh,
+                #     ortho_init=True,
+                # ),
             ),
             "dqn": DQN("MlpPolicy", vec_env, verbose=2),
             "a2c": A2C(
                 policy="MlpPolicy",
                 env=vec_env,
                 device="cpu",
+                ent_coef=0.2,
+
                 # normalize_advantage=True,
-                normalize_advantage=False,
+                # normalize_advantage=False,
                 # gamma=0.95,
-                gamma=0.98,
-                max_grad_norm=0.6,
-                gae_lambda=0.95,
-                n_steps=32,
+                # gamma=0.98,
+                # max_grad_norm=0.6,
+                # gae_lambda=0.95,
+                # n_steps=32,
                 # learning_rate=0.011990568639893203,
-                learning_rate=1.6095819036923265e-05,
+                # learning_rate=1.6095819036923265e-05,
                 # ent_coef=0.0001762335127850959,
-                ent_coef=1.6422053936649572e-06,
+                # ent_coef=1.6422053936649572e-06,
                 # vf_coef=0.15658994629928458,
-                vf_coef=0.5971271120046378,
-                use_rms_prop=True,
-                policy_kwargs=dict(
-                    net_arch=dict(pi=[64, 64], vf=[64, 64]),
-                    activation_fn=nn.Tanh,
-                    ortho_init=True,
-                ),
+                # vf_coef=0.5971271120046378,
+                # use_rms_prop=True,
+                # policy_kwargs=dict(
+                #     net_arch=dict(pi=[64, 128, 256, 128, 64], vf=[64, 128, 256, 128, 64]),
+                #     activation_fn=nn.Tanh,
+                #     ortho_init=True,
+                # ),
                 verbose=2,
             ),
         }[model_name]
