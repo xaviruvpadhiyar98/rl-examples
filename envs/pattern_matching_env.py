@@ -1,9 +1,6 @@
 import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
-
-# from data.actions import correct_actions
-# from data.ob_space import obs
 import polars as pl
 from pathlib import Path
 
@@ -32,6 +29,7 @@ class PatternMatchingEnv(gym.Env):
         )
         self.correct_actions = df.select("Actions").to_series().to_list()
         self.all_states = df.drop("Actions").to_numpy()
+        self.len_of_all_states = len(self.all_states)
         self.action_map = {0: "BUY", 1: "HOLD", 2: "SELL"}
 
     def step(self, action):
@@ -63,9 +61,9 @@ class PatternMatchingEnv(gym.Env):
             "reward": reward,
         }
 
-        done = self.current_step >= len(self.all_states) - 1
-        if done:
-            reward += self.took_correct_actions
+        done = self.current_step >= self.len_of_all_states - 1
+        if done or truncated:
+            reward += (self.current_step - self.len_of_all_states)
             return self.state, reward, done, truncated, info
         
         self.current_step += 1
