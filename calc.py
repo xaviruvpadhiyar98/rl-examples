@@ -9,6 +9,7 @@ import numpy as np
 from gymnasium.spaces import Dict, Discrete, Box, MultiDiscrete
 from pathlib import Path
 
+Box(low=np.array([0, 0, 0]), high=np.array([100, 100, 3]), dtype=np.int64)
 
 
 class EvalCallback(BaseCallback):
@@ -27,7 +28,7 @@ class EvalCallback(BaseCallback):
 
     def _on_rollout_end(self) -> None:
         infos = self.locals["infos"]
-        sorted_infos = sorted(infos, key=lambda x: x['correct'], reverse=True)
+        sorted_infos = sorted(infos, key=lambda x: x["correct"], reverse=True)
         best_info = sorted_infos[0]
         for k, v in best_info.items():
             self.logger.record(f"train/{k}", v)
@@ -36,51 +37,73 @@ class EvalCallback(BaseCallback):
         pass
 
 
-class AdditionEnv(gym.Env):
+class CalcEnv(gym.Env):
     metadata = {}
-    max_number = 100
+    max_n = 100
+    calc_mapping = {0: np.add, 1: np.subtract, 2: np.multiply, 3: np.divide}
 
     def __init__(self):
         super().__init__()
-        self.action_space = spaces.Discrete(self.max_number * 2)
-        # self.observation_space = spaces.MultiDiscrete([100, 100])
-        self.observation_space = Box(0, self.max_number, (2,), np.int64)
-        
+        self.action_space = spaces.Discrete(
+            n=(self.max_n * self.max_n) + self.max_n, start=-self.max_n
+        )
+        self.observation_space = Box(
+            low=np.array([1, 1, 0]),
+            high=np.array([self.max_n, self.max_n, 3]),
+            dtype=np.int64,
+        )
 
     def step(self, action):
-        actual_sum = np.sum(self.state)
-        error = abs(actual_sum - action)
+        num1, num2, calc_action = self.state
+        calc_action = self.calc_mapping[calc_action]
+        # print(num1, num2, calc_action)
+        result = int(calc_action(num1, num2))
+
+        error = abs(result - action)
         if error == 0:
-            # print(f"{self.counter} {self.state=} {action=} {actual_sum=}")
             reward = 1
             self.correct += 1
         else:
-            reward = -float(error) * 2
+            reward = -float(error)
             self.wrong += 1
 
         info = {
-            'correct': self.correct,
-            'wrong': self.wrong,
-            "state": self.state,
-            "sum": actual_sum,
+            "correct": self.correct,
+            "wrong": self.wrong,
+            "num1": num1,
+            "num2": num2,
+            "calc_action": calc_action,
+            "result": result,
             "model_predicted": action,
             "reward": reward,
-            'counter': self.counter
+            "counter": self.counter,
         }
         if self.counter == 500:
             return self.state, reward, True, False, info
 
         self.counter += 1
-        self.state = np.random.randint(100, size=(2,))
-        return self.state, reward, False, False, info    
+        self.state = np.array(
+            [
+                np.random.randint(1, 101),
+                np.random.randint(1, 101),
+                np.random.randint(0, 4),
+            ]
+        )
+        return self.state, reward, False, False, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.counter = 0
         self.correct = 0
         self.wrong = 0
-        self.state = np.random.randint(100, size=(2,))
-        return self.state, {"sum": np.sum(self.state)}
+        self.state = np.array(
+            [
+                np.random.randint(1, 101),
+                np.random.randint(1, 101),
+                np.random.randint(0, 4),
+            ]
+        )
+        return self.state, {}
 
     def close(self):
         ...
@@ -88,7 +111,7 @@ class AdditionEnv(gym.Env):
 
 def test(model):
     eval_envs = 1
-    eval_env = AdditionEnv
+    eval_env = CalcEnv
     eval_vec_env = make_vec_env(eval_env, n_envs=eval_envs)
 
     done_counter = 0
@@ -107,21 +130,26 @@ def test(model):
     print(best_env)
 
 
-env = AdditionEnv
-model_name = 'adder_a2c'
+env = CalcEnv
+model_name = "calc_a2c"
 num_envs = 128
 vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs))
 eval_vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs), training=False)
 
 
 if Path(f"{model_name}.zip").exists():
-    model = A2C.load('adder_a2c', vec_env, print_system_info=True, device="cpu")
+    model = A2C.load(model_name, vec_env, print_system_info=True, device="cpu")
 else:
-    model = A2C("MlpPolicy", vec_env, verbose=2, device='cpu', ent_coef=0.01)
+    model = A2C("MlpPolicy", vec_env, verbose=2, device="cpu", ent_coef=0.01)
 
 reset_num_timesteps = not Path(f"{model_name}.zip").exists()
-model.learn(total_timesteps=10_000_000, progress_bar=True, reset_num_timesteps=reset_num_timesteps, callback=EvalCallback())
+model.learn(
+    total_timesteps=10_000_000,
+    progress_bar=True,
+    reset_num_timesteps=reset_num_timesteps,
+    callback=EvalCallback(),
+)
 mean_reward, _ = evaluate_policy(model, eval_vec_env, n_eval_episodes=10)
 print(f"Mean reward: {mean_reward}")
-model.save('adder_a2c')
+model.save(model_name)
 # test(model)

@@ -4,9 +4,6 @@ from gymnasium import spaces
 import polars as pl
 from pathlib import Path
 
-
-
-
 class PatternMatchingEnv(gym.Env):
     """
     Custom environment for OpenAI Gym with discrete actions and a 3x3 matrix observation space.
@@ -42,10 +39,7 @@ class PatternMatchingEnv(gym.Env):
         if action_char == expected_action:
             self.took_correct_actions += 1
             reward += 1
-            # if action_char == "SELL":
-            # reward += 1 if action_char in ["BUY", "SELL"] else 0
         else:
-            # reward -= 50 if action_char == "HOLD" else 200
             reward = -1
             self.took_incorrect_actions += 1
             truncated = True

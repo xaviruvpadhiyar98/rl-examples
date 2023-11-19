@@ -50,8 +50,13 @@ class TrainingCallback(BaseCallback):
         )
 
     def on_rollout_end(self) -> None:
-        self._on_rollout_end()
-        self.do_eval = False
+        infos = self.locals["infos"]
+        sorted_infos = sorted(infos, key=lambda x: x['correct_actions'], reverse=True)
+        best_info = sorted_infos[0]
+        for k, v in best_info.items():
+            self.logger.record(f"train/{k}", v)
+        # self._on_rollout_end()
+        # self.do_eval = False
 
     def _on_step(self) -> bool:
         if not self.do_eval:
