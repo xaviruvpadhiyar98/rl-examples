@@ -10,7 +10,6 @@ from gymnasium.spaces import Dict, Discrete, Box, MultiDiscrete
 from pathlib import Path
 
 
-
 class EvalCallback(BaseCallback):
     def __init__(self):
         super().__init__()
@@ -27,7 +26,7 @@ class EvalCallback(BaseCallback):
 
     def _on_rollout_end(self) -> None:
         infos = self.locals["infos"]
-        sorted_infos = sorted(infos, key=lambda x: x['correct'], reverse=True)
+        sorted_infos = sorted(infos, key=lambda x: x["correct"], reverse=True)
         best_info = sorted_infos[0]
         for k, v in best_info.items():
             self.logger.record(f"train/{k}", v)
@@ -45,7 +44,6 @@ class AdditionEnv(gym.Env):
         self.action_space = spaces.Discrete(self.max_number * 2)
         # self.observation_space = spaces.MultiDiscrete([100, 100])
         self.observation_space = Box(0, self.max_number, (2,), np.int64)
-        
 
     def step(self, action):
         actual_sum = np.sum(self.state)
@@ -59,20 +57,20 @@ class AdditionEnv(gym.Env):
             self.wrong += 1
 
         info = {
-            'correct': self.correct,
-            'wrong': self.wrong,
+            "correct": self.correct,
+            "wrong": self.wrong,
             "state": self.state,
             "sum": actual_sum,
             "model_predicted": action,
             "reward": reward,
-            'counter': self.counter
+            "counter": self.counter,
         }
         if self.counter == 500:
             return self.state, reward, True, False, info
 
         self.counter += 1
         self.state = np.random.randint(100, size=(2,))
-        return self.state, reward, False, False, info    
+        return self.state, reward, False, False, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -108,20 +106,25 @@ def test(model):
 
 
 env = AdditionEnv
-model_name = 'adder_a2c'
+model_name = "adder_a2c"
 num_envs = 128
 vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs))
 eval_vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs), training=False)
 
 
 if Path(f"{model_name}.zip").exists():
-    model = A2C.load('adder_a2c', vec_env, print_system_info=True, device="cpu")
+    model = A2C.load("adder_a2c", vec_env, print_system_info=True, device="cpu")
 else:
-    model = A2C("MlpPolicy", vec_env, verbose=2, device='cpu', ent_coef=0.01)
+    model = A2C("MlpPolicy", vec_env, verbose=2, device="cpu", ent_coef=0.01)
 
 reset_num_timesteps = not Path(f"{model_name}.zip").exists()
-model.learn(total_timesteps=10_000_000, progress_bar=True, reset_num_timesteps=reset_num_timesteps, callback=EvalCallback())
+model.learn(
+    total_timesteps=10_000_000,
+    progress_bar=True,
+    reset_num_timesteps=reset_num_timesteps,
+    callback=EvalCallback(),
+)
 mean_reward, _ = evaluate_policy(model, eval_vec_env, n_eval_episodes=10)
 print(f"Mean reward: {mean_reward}")
-model.save('adder_a2c')
+model.save("adder_a2c")
 # test(model)

@@ -14,9 +14,6 @@ from stable_baselines3.common.vec_env import VecNormalize
 np.random.seed(123)
 
 
-
-
-
 def main():
     env = PatternMatchingEnv
     eval_envs = 1
@@ -26,10 +23,10 @@ def main():
 
     model = {
         "a2c": A2C.load(model_name, eval_vec_env, print_system_info=True, device="cpu"),
-        "ppo": PPO.load(model_name, eval_vec_env, print_system_info=True, device="auto"),
+        "ppo": PPO.load(
+            model_name, eval_vec_env, print_system_info=True, device="auto"
+        ),
     }[model_name]
-
-
 
     counter = 0
     results = []
@@ -49,7 +46,6 @@ def main():
     #     for r in results:
     #         json.dump(r, f)
     #         f.write('\n')
-
 
 
 if __name__ == "__main__":

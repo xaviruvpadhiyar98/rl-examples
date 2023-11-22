@@ -4,13 +4,18 @@ from gymnasium import spaces
 import polars as pl
 from pathlib import Path
 
+
 class PatternMatchingEnv(gym.Env):
-    """
-    Custom environment for OpenAI Gym with discrete actions and a 3x3 matrix observation space.
-    """
+    """"""
+
+    metadata = {}
 
     def __init__(self):
-        super(PatternMatchingEnv, self).__init__()
+        super().__init__()
+
+        df = pl.read_excel(Path("data/LabelTradeSBI.NS.xlsx")).drop("Datetime")
+        print(df)
+        raise
 
         self.action_space = spaces.Discrete(3)
         low = -1
@@ -19,11 +24,7 @@ class PatternMatchingEnv(gym.Env):
             low=low, high=high, shape=(18,), dtype=np.float32
         )
 
-        df = (
-            pl
-            .read_excel(Path("data/LabelTradeSBI.NS.xlsx"))
-            .drop("Datetime")
-        )
+        df = pl.read_excel(Path("data/LabelTradeSBI.NS.xlsx")).drop("Datetime")
         self.correct_actions = df.select("Actions").to_series().to_list()
         self.all_states = df.drop("Actions").to_numpy()
         self.len_of_all_states = len(self.all_states)
@@ -57,9 +58,9 @@ class PatternMatchingEnv(gym.Env):
 
         done = self.current_step >= self.len_of_all_states - 1
         if done or truncated:
-            reward += (self.current_step - self.len_of_all_states)
+            reward += self.current_step - self.len_of_all_states
             return self.state, reward, done, truncated, info
-        
+
         self.current_step += 1
         self.state = self.all_states[self.current_step]
         return self.state, reward, done, truncated, info

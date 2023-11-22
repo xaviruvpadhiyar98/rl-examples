@@ -6,8 +6,10 @@ from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import BaseCallback
 from gymnasium import spaces
 import numpy as np
+import operator as op
 from gymnasium.spaces import Dict, Discrete, Box, MultiDiscrete
 from pathlib import Path
+import math
 
 Box(low=np.array([0, 0, 0]), high=np.array([100, 100, 3]), dtype=np.int64)
 
@@ -40,7 +42,13 @@ class EvalCallback(BaseCallback):
 class CalcEnv(gym.Env):
     metadata = {}
     max_n = 100
-    calc_mapping = {0: np.add, 1: np.subtract, 2: np.multiply, 3: np.divide}
+    # calc_mapping = {0: np.add, 1: np.subtract, 2: np.multiply, 3: np.divide}
+    calc_mapping = {
+        0: op.add,
+        1: op.sub,
+        2: op.mul,
+        3: lambda x, y: x // y if y != 0 else 0,
+    }
 
     def __init__(self):
         super().__init__()
@@ -58,13 +66,12 @@ class CalcEnv(gym.Env):
         calc_action = self.calc_mapping[calc_action]
         # print(num1, num2, calc_action)
         result = int(calc_action(num1, num2))
-
         error = abs(result - action)
         if error == 0:
-            reward = 1
+            reward = 10
             self.correct += 1
         else:
-            reward = -float(error)
+            reward = -math.exp(min(error, 10))
             self.wrong += 1
 
         info = {
@@ -72,7 +79,7 @@ class CalcEnv(gym.Env):
             "wrong": self.wrong,
             "num1": num1,
             "num2": num2,
-            "calc_action": calc_action,
+            "calc_action": calc_action.__name__,
             "result": result,
             "model_predicted": action,
             "reward": reward,
@@ -132,15 +139,25 @@ def test(model):
 
 env = CalcEnv
 model_name = "calc_a2c"
+model_name = "calc_ppo"
 num_envs = 128
 vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs))
 eval_vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs), training=False)
 
 
 if Path(f"{model_name}.zip").exists():
-    model = A2C.load(model_name, vec_env, print_system_info=True, device="cpu")
+    # model = A2C.load(model_name, vec_env, print_system_info=True, device="cpu")
+    model = PPO.load(model_name, vec_env, print_system_info=True, device="auto")
 else:
-    model = A2C("MlpPolicy", vec_env, verbose=2, device="cpu", ent_coef=0.01)
+    # model = A2C("MlpPolicy", vec_env, verbose=2, device="cpu", ent_coef=0.01, tensorboard_log="logs")
+    model = PPO(
+        "MlpPolicy",
+        vec_env,
+        verbose=2,
+        device="auto",
+        ent_coef=0.01,
+        tensorboard_log="logs",
+    )
 
 reset_num_timesteps = not Path(f"{model_name}.zip").exists()
 model.learn(
@@ -148,6 +165,7 @@ model.learn(
     progress_bar=True,
     reset_num_timesteps=reset_num_timesteps,
     callback=EvalCallback(),
+    tb_log_name=model_name,
 )
 mean_reward, _ = evaluate_policy(model, eval_vec_env, n_eval_episodes=10)
 print(f"Mean reward: {mean_reward}")

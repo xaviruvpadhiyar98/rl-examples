@@ -51,7 +51,7 @@ class TrainingCallback(BaseCallback):
 
     def on_rollout_end(self) -> None:
         infos = self.locals["infos"]
-        sorted_infos = sorted(infos, key=lambda x: x['correct_actions'], reverse=True)
+        sorted_infos = sorted(infos, key=lambda x: x["correct_actions"], reverse=True)
         best_info = sorted_infos[0]
         for k, v in best_info.items():
             self.logger.record(f"train/{k}", v)
@@ -81,13 +81,15 @@ class TrainingCallback(BaseCallback):
             "train/best_env_correct_actions", best_env["correct_actions"]
         )
         return True
-    
+
     def _on_training_end(self) -> None:
         self.test()
         return True
 
 
-def create_model(model_class, vec_env, device="cpu", ent_coef=0.1, tensorboard_log="logs"):
+def create_model(
+    model_class, vec_env, device="cpu", ent_coef=0.1, tensorboard_log="logs"
+):
     return model_class(
         policy="MlpPolicy",
         env=vec_env,
@@ -97,6 +99,7 @@ def create_model(model_class, vec_env, device="cpu", ent_coef=0.1, tensorboard_l
         verbose=2,
     )
 
+
 def main():
     env = PatternMatchingEnv
     num_envs = 128
@@ -105,21 +108,18 @@ def main():
 
     vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs))
 
-    model_classes = {
-        "a2c": A2C,
-        "ppo": PPO,
-        "dqn": DQN
-    }
+    model_classes = {"a2c": A2C, "ppo": PPO, "dqn": DQN}
 
     if model_name not in model_classes:
         raise ValueError(f"Unsupported model name: {model_name}")
-
 
     model_class = model_classes[model_name]
     model_file = f"{model_name}.zip"
 
     if Path(model_file).exists():
-        model = model_class.load(model_name, vec_env, print_system_info=True, device="cpu")
+        model = model_class.load(
+            model_name, vec_env, print_system_info=True, device="cpu"
+        )
     else:
         model = create_model(model_class, vec_env)
 
@@ -161,59 +161,60 @@ def main():
     #         )
     #     else:
     #         raise ValueError
-        
-        # model = {
-        #     "ppo": PPO(
-        #         "MlpPolicy",
-        #         vec_env,
-        #         verbose=2,
-        #         ent_coef=0.1,
-        #         tensorboard_log="logs"
-        #         # policy_kwargs=dict(
-        #         #     net_arch=dict(pi=[64, 128, 256, 128, 64], vf=[64, 128, 256, 128, 64]),
-        #         #     activation_fn=nn.Tanh,
-        #         #     ortho_init=True,
-        #         # ),
-        #     ),
-        #     "dqn": DQN("MlpPolicy", vec_env, verbose=2),
-        #     "a2c": A2C(
-        #         policy="MlpPolicy",
-        #         env=vec_env,
-        #         device="cpu",
-        #         ent_coef=0.1,
-        #         tensorboard_log="logs",
 
-        #         # normalize_advantage=True,
-        #         # normalize_advantage=False,
-        #         # gamma=0.95,
-        #         # gamma=0.98,
-        #         # max_grad_norm=0.6,
-        #         # gae_lambda=0.95,
-        #         # n_steps=32,
-        #         # learning_rate=0.011990568639893203,
-        #         # learning_rate=1.6095819036923265e-05,
-        #         # ent_coef=0.0001762335127850959,
-        #         # ent_coef=1.6422053936649572e-06,
-        #         # vf_coef=0.15658994629928458,
-        #         # vf_coef=0.5971271120046378,
-        #         # use_rms_prop=True,
-        #         # policy_kwargs=dict(
-        #         #     net_arch=dict(pi=[64, 128, 256, 128, 64], vf=[64, 128, 256, 128, 64]),
-        #         #     activation_fn=nn.Tanh,
-        #         #     ortho_init=True,
-        #         # ),
-        #         verbose=2,
-        #     ),
-        # }[model_name]
-        # reset_num_timesteps = True
+    # model = {
+    #     "ppo": PPO(
+    #         "MlpPolicy",
+    #         vec_env,
+    #         verbose=2,
+    #         ent_coef=0.1,
+    #         tensorboard_log="logs"
+    #         # policy_kwargs=dict(
+    #         #     net_arch=dict(pi=[64, 128, 256, 128, 64], vf=[64, 128, 256, 128, 64]),
+    #         #     activation_fn=nn.Tanh,
+    #         #     ortho_init=True,
+    #         # ),
+    #     ),
+    #     "dqn": DQN("MlpPolicy", vec_env, verbose=2),
+    #     "a2c": A2C(
+    #         policy="MlpPolicy",
+    #         env=vec_env,
+    #         device="cpu",
+    #         ent_coef=0.1,
+    #         tensorboard_log="logs",
 
+    #         # normalize_advantage=True,
+    #         # normalize_advantage=False,
+    #         # gamma=0.95,
+    #         # gamma=0.98,
+    #         # max_grad_norm=0.6,
+    #         # gae_lambda=0.95,
+    #         # n_steps=32,
+    #         # learning_rate=0.011990568639893203,
+    #         # learning_rate=1.6095819036923265e-05,
+    #         # ent_coef=0.0001762335127850959,
+    #         # ent_coef=1.6422053936649572e-06,
+    #         # vf_coef=0.15658994629928458,
+    #         # vf_coef=0.5971271120046378,
+    #         # use_rms_prop=True,
+    #         # policy_kwargs=dict(
+    #         #     net_arch=dict(pi=[64, 128, 256, 128, 64], vf=[64, 128, 256, 128, 64]),
+    #         #     activation_fn=nn.Tanh,
+    #         #     ortho_init=True,
+    #         # ),
+    #         verbose=2,
+    #     ),
+    # }[model_name]
+    # reset_num_timesteps = True
 
     eval_model = deepcopy(model)
     eval_model.policy.set_training_mode(False)
     model.learn(
-        total_timesteps=timestamp, progress_bar=True, callback=TrainingCallback(eval_model, model_name),
+        total_timesteps=timestamp,
+        progress_bar=True,
+        callback=TrainingCallback(eval_model, model_name),
         tb_log_name=model_name,
-        reset_num_timesteps=reset_num_timesteps
+        reset_num_timesteps=reset_num_timesteps,
     )
 
     # counter = 0

@@ -7,6 +7,7 @@ from pathlib import Path
 np.random.seed(123)
 from copy import deepcopy
 
+
 class TuningCallback(BaseCallback):
     def __init__(self, eval_model):
         super().__init__()
@@ -17,7 +18,9 @@ class TuningCallback(BaseCallback):
         eval_envs = len(self.locals["env"].envs)
 
         eval_env = PatternMatchingEnv
-        eval_vec_env = VecNormalize(make_vec_env(eval_env, n_envs=eval_envs), training=False)
+        eval_vec_env = VecNormalize(
+            make_vec_env(eval_env, n_envs=eval_envs), training=False
+        )
         self.eval_model.set_parameters(self.model.get_parameters())
 
         done_counter = 0
@@ -38,15 +41,14 @@ class TuningCallback(BaseCallback):
         self.logger.record(
             "trade/best_env_correct_actions", best_env["correct_actions"]
         )
-        Path("best_env_current_step").write_text(str(best_env['current_step']))
-    
+        Path("best_env_current_step").write_text(str(best_env["current_step"]))
+
     def _on_step(self) -> bool:
         return super()._on_step()
 
     def _on_training_end(self) -> None:
         self.test()
         return True
-
 
 
 def objective(trial):
@@ -68,10 +70,15 @@ def objective(trial):
     model = {"ppo": PPO, "dqn": DQN, "a2c": A2C}[model_name](**hp)
     eval_model = deepcopy(model)
     eval_model.policy.set_training_mode(False)
-    model.learn(total_timesteps=timestamp, progress_bar=True, callback=TuningCallback(eval_model))
+    model.learn(
+        total_timesteps=timestamp,
+        progress_bar=True,
+        callback=TuningCallback(eval_model),
+    )
 
     best_env_final_reward = Path("best_env_current_step").read_text()
     return int(best_env_final_reward)
+
 
 if __name__ == "__main__":
     import json
