@@ -26,47 +26,6 @@ def linear_schedule(initial_value: float):
     return func
 
 
-class EvalCallback(BaseCallback):
-    def __init__(self, model_name: str, eval_vec_env):
-        super().__init__()
-        self.model_name = model_name
-        self.eval_vec_env = eval_vec_env
-
-    def _on_training_start(self) -> None:
-        pass
-
-    def _on_rollout_start(self) -> None:
-        pass
-
-    def _on_step(self) -> bool:
-        dones = self.locals['dones']
-        if not np.any(dones):
-            return True
-        infos = self.locals["infos"]
-        sorted_infos = sorted(infos, key=lambda x: (x["counter"], x['correct']), reverse=True)
-        best_info = sorted_infos[0]
-        for k, v in best_info.items():
-            self.logger.record(f"train/{k}", v)
-
-        best_info.pop('TimeLimit.truncated')
-        best_info.pop('terminal_observation')
-        print(best_info)
-        return True
-
-    def _on_rollout_end(self) -> None:
-        pass
-
-
-    def _on_training_end(self) -> None:
-        pass
-
-    def log(self) -> None:
-        infos = self.locals["infos"]
-        sorted_infos = sorted(infos, key=lambda x: x["correct"], reverse=True)
-        best_info = sorted_infos[0]
-        for k, v in best_info.items():
-            self.logger.record(f"train/{k}", v)
-        print(best_info)
 
 
 class AdditionEnv(gym.Env):
@@ -132,49 +91,25 @@ class AdditionEnv(gym.Env):
 
 
 
+def eval_callback(l, g):
+    info = l['infos'][0]
+    if info['sum'] != info['model_predicted']:
+        print(info)
+
+
+
 def main():
     env = AdditionEnv
     model_name = "adder_ppo"
-    num_envs = 64
     eval_envs = 1
     env_kwargs = {"max_number": 9}
-    vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs, env_kwargs=env_kwargs))
     eval_vec_env = VecNormalize(make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs))
 
+    model = PPO.load(model_name)
 
-    # hp = {
-    #     "ent_coef": 0.04,
-    #     "n_epochs": 5,
-    #     "n_steps": 32 * num_envs,
-    #     "batch_size": 128,
-    #     "learning_rate": linear_schedule(0.003),
-    #     "verbose": 0,
-    #     "device": "auto",
-    #     # "gamma": 0.93,
-    #     # "gae_lambda": 0.99,
-    #     "tensorboard_log": "tensorboard_log"
-    # }
-
-    # model = PPO(
-    #     "MlpPolicy",
-    #     vec_env,
-    #     **hp,
-    # )
-    model = PPO.load(model_name, vec_env)
-
-
-    model.learn(
-        total_timesteps=20_000_000,
-        progress_bar=True,
-        reset_num_timesteps=False,
-        callback=EvalCallback(model_name, eval_vec_env),
-        tb_log_name=model_name
-    )
-
-
-    result = evaluate_policy(model, eval_vec_env, return_episode_rewards=True)
+    result = evaluate_policy(model, eval_vec_env, return_episode_rewards=True, callback=eval_callback, n_eval_episodes=10)
     print(result)
-    model.save(f"{model_name}.zip")
+
 
 
 
