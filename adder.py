@@ -1,14 +1,11 @@
 import gymnasium as gym
-from stable_baselines3 import PPO, DQN, A2C
+from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.callbacks import BaseCallback
 import numpy as np
 from gymnasium.spaces import Discrete, Box
-from pathlib import Path
-from random import choice, shuffle, randint
-from collections import Counter
+from random import shuffle
 from copy import copy
 
 
@@ -41,7 +38,7 @@ class EvalCallback(BaseCallback):
         eval_envs = 1
         env_kwargs = {"max_number": 9}
         eval_vec_env = VecNormalize(
-            make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs)
+            make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs, seed=None)
         )
         obs = eval_vec_env.reset()
         trade_model = copy(self.model)
@@ -52,6 +49,10 @@ class EvalCallback(BaseCallback):
                 obs, rewards, dones, infos = eval_vec_env.step(actions)
                 if any(dones):
                     print(infos)
+                    if infos[0]['correct %'] == 100.0:
+                        trade_model.save("best_model_adder.zip")
+                        import sys;
+                        sys.exit()
                     break
         print()
 
@@ -105,6 +106,8 @@ class AdditionEnv(gym.Env):
         reward = -abs(actual_sum - action) - 20
         if actual_sum == model_predicted_sum:
             reward = actual_sum + 20
+            if actual_sum == 0:
+                reward += 2
             self.correct += 1
         else:
             self.wrong += 1
@@ -177,15 +180,15 @@ def main():
         "tensorboard_log": "tensorboard_log",
     }
 
-    # model = PPO(
-    #     "MlpPolicy",
-    #     vec_env,
-    #     **hp,
-    # )
-    model = PPO.load(model_name, vec_env, **hp)
+    model = PPO(
+        "MlpPolicy",
+        vec_env,
+        **hp,
+    )
+    # model = PPO.load(model_name, vec_env, **hp)
 
     model.learn(
-        total_timesteps=10_000_000,
+        total_timesteps=50_000_000,
         progress_bar=True,
         reset_num_timesteps=False,
         callback=EvalCallback(model_name, eval_vec_env),
