@@ -49,7 +49,7 @@ class EvalCallback(BaseCallback):
                 obs, rewards, dones, infos = eval_vec_env.step(actions)
                 if any(dones):
                     print(infos)
-                    if infos[0]['correct %'] == 100.0:
+                    if infos[0]['correct %'] == 99.0:
                         trade_model.save("best_model_adder.zip")
                         import sys;
                         sys.exit()
