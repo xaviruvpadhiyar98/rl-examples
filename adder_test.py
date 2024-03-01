@@ -1,38 +1,32 @@
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize
 from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.evaluation import evaluate_policy
 from adder import AdditionEnv
-
-
-def eval_callback(l, g):
-    info = l["infos"][0]
-    if info["sum"] != info["model_predicted"]:
-        print(info["num1"], info["num2"])
-
+from pathlib import Path
 
 def main():
+    model_path = Path("models")
     env = AdditionEnv
-    model_name = "best_model_adder"
+    best_model_name = "best_adder_ppo"
+    best_normalize_model_name = "best_normalize_adder_ppo.zip"
+
+    # model_name = "adder_ppo"
     eval_envs = 1
     env_kwargs = {"max_number": 9}
-    eval_vec_env = VecNormalize(make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs, seed=None))
+    eval_vec_env = make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs)
+    eval_vec_env = VecNormalize.load(model_path / best_normalize_model_name, eval_vec_env)
 
-    model = PPO.load(model_name)
+    model = PPO.load(model_path / best_model_name)
     obs = eval_vec_env.reset()
-    for _ in range(10):
-        while True:
-            actions, _ = model.predict(obs, deterministic=True)
-            obs, rewards, dones, infos = eval_vec_env.step(actions)
-            if infos[0]["sum"] != infos[0]["model_predicted"]:
-                print(infos[0])
-            if any(dones):
-                print()
-                print(infos)
-                print()
-                break
-
-
+    while True:
+        actions, _ = model.predict(obs, deterministic=True)
+        obs, rewards, dones, infos = eval_vec_env.step(actions)
+        print(infos)
+        if any(dones):
+            # print()
+            # print(infos)
+            # print()
+            break
 
 
 if __name__ == "__main__":

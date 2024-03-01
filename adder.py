@@ -7,6 +7,7 @@ import numpy as np
 from gymnasium.spaces import Discrete, Box
 from random import shuffle
 from copy import copy
+from pathlib import Path
 
 
 def generate_n_digit_sums(n):
@@ -25,42 +26,24 @@ def linear_schedule(initial_value: float):
 
 
 class EvalCallback(BaseCallback):
-    def __init__(self, model_name: str, eval_vec_env):
+    def __init__(self, model_name: str):
         super().__init__()
         self.model_name = model_name
-        self.eval_vec_env = eval_vec_env
+        self.model_path = Path("models")
+        self.model_path.mkdir(parents=True, exist_ok=True)
 
     def _on_training_start(self) -> None:
         pass
 
     def _on_rollout_start(self) -> None:
-        env = AdditionEnv
-        eval_envs = 1
-        env_kwargs = {"max_number": 9}
-        eval_vec_env = VecNormalize(
-            make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs, seed=None)
-        )
-        obs = eval_vec_env.reset()
-        trade_model = copy(self.model)
-        print()
-        for _ in range(5):
-            while True:
-                actions, _ = trade_model.predict(obs, deterministic=True)
-                obs, rewards, dones, infos = eval_vec_env.step(actions)
-                if any(dones):
-                    print(infos)
-                    if infos[0]['correct %'] == 99.0:
-                        trade_model.save("best_model_adder.zip")
-                        import sys;
-                        sys.exit()
-                    break
-        print()
-
+        pass
 
     def _on_step(self) -> bool:
+        continue_training = True
         dones = self.locals["dones"]
         if not np.any(dones):
             return True
+
         infos = self.locals["infos"]
         sorted_infos = sorted(
             infos, key=lambda x: (x["counter"], x["correct"]), reverse=True
@@ -69,13 +52,13 @@ class EvalCallback(BaseCallback):
         for k, v in best_info.items():
             self.logger.record(f"train/{k}", v)
 
-        best_info.pop("TimeLimit.truncated")
-        best_info.pop("terminal_observation")
-        print(best_info)
-        return True
+        if best_info["correct"] == 100:
+            continue_training = self.test()
+        return continue_training
 
     def _on_rollout_end(self) -> None:
-        pass
+        continue_training = self.test()
+        return continue_training
 
     def _on_training_end(self) -> None:
         pass
@@ -88,6 +71,38 @@ class EvalCallback(BaseCallback):
             self.logger.record(f"train/{k}", v)
         print(best_info)
 
+    def test(self):
+        continue_training = True
+        env = AdditionEnv
+        eval_envs = 1
+        env_kwargs = {"max_number": 9}
+        eval_vec_env = VecNormalize(
+            make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs)
+        )
+        obs = eval_vec_env.reset()
+        trade_model = copy(self.model)
+        for _ in range(10):
+            while True:
+                actions, _ = trade_model.predict(obs, deterministic=True)
+                obs, rewards, dones, infos = eval_vec_env.step(actions)
+                if any(dones):
+                    correct = infos[0]["correct"]
+                    wrong = infos[0]["wrong"]
+                    for k, v in infos[0].items():
+                        self.logger.record(f"test/{k}", v)
+                    if correct > 5:
+                        print(f"{'='*50}eval started{'='*50}")
+                        print(infos)
+                        print(f"{'='*50}eval ended{'='*50}")
+                    if correct == 100 and wrong == 0:
+                        self.model.save(self.model_path / f"best_{self.model_name}.zip")
+                        self.model.get_vec_normalize_env().save(self.model_path / f"best_normalize_{self.model_name}.zip")
+                        continue_training = False
+                    break
+        
+        return continue_training
+        
+
 
 class AdditionEnv(gym.Env):
     metadata = {}
@@ -95,26 +110,29 @@ class AdditionEnv(gym.Env):
     def __init__(self, max_number):
         super().__init__()
         self.max_number = max_number
-        self.action_space = Discrete(start=0, n=max_number * 2 + 1)
-        # self.observation_space = Box(-self.max_number*2+2, self.max_number*2-2, (5,5), np.int64)
+        self.action_space = Discrete(start=-1, n=max_number * 2 + 2)
         self.observation_space = Box(0, max_number, (2,), np.int64)
 
     def step(self, action):
+        terminated = False
+        done = False
+        num1 = self.dataset[self.counter][0]
+        num2 = self.dataset[self.counter][1]
         actual_sum = self.dataset[self.counter][2]
         model_predicted_sum = action
 
-        reward = -abs(actual_sum - action) - 20
+        reward = -abs(actual_sum - action) - 0.9
         if actual_sum == model_predicted_sum:
-            reward = actual_sum + 20
-            if actual_sum == 0:
-                reward += 2
+            reward = actual_sum + 0.9
             self.correct += 1
         else:
             self.wrong += 1
+            terminated = True
+            reward -= 1000
 
         info = {
-            "num1": self.dataset[self.counter][0],
-            "num2": self.dataset[self.counter][1],
+            "num1": num1,
+            "num2": num2,
             "sum": actual_sum,
             "model_predicted": model_predicted_sum,
             "reward": reward,
@@ -126,7 +144,12 @@ class AdditionEnv(gym.Env):
         }
 
         if self.counter == len(self.dataset) - 1:
-            return self.state, reward, True, False, info
+            print(info)
+            reward += 1000
+            done = True
+
+        if done or terminated:
+            return self.state, reward, done, terminated, info
 
         self.counter += 1
         self.state = np.array(self.dataset[self.counter][:2])
@@ -134,7 +157,7 @@ class AdditionEnv(gym.Env):
         # self.num1, self.num2, self.result = self.dataset[self.counter]
         # new_state = np.array([[self.num1, self.num2, -1, -1, -1]])
         # self.state = np.concatenate((self.state, new_state), axis=0)[-5:]
-        return self.state, reward, False, False, info
+        return self.state, reward, done, terminated, info
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -146,10 +169,6 @@ class AdditionEnv(gym.Env):
         self.dataset = generate_n_digit_sums(self.max_number)
         [shuffle(self.dataset) for _ in range(10)]
         self.state = np.array(self.dataset[self.counter][:2])
-        # self.num1, self.num2, self.result = self.dataset[self.counter]
-        # initial_state = np.random.randint(-1, 0, size=(5,5), dtype=np.int64)
-        # new_state = np.array([[self.num1, self.num2, -1, -1, -1]])
-        # self.state = np.concatenate((initial_state, new_state), axis=0)[-5:]
         return self.state, {"state": self.state}
 
     def close(self):
@@ -157,23 +176,21 @@ class AdditionEnv(gym.Env):
 
 
 def main():
+    model_path = Path("models")
+    model_path.mkdir(parents=True, exist_ok=True)
     env = AdditionEnv
     model_name = "adder_ppo"
-    num_envs = 64
-    eval_envs = 1
+    num_envs = 32
     env_kwargs = {"max_number": 9}
     vec_env = VecNormalize(make_vec_env(env, n_envs=num_envs, env_kwargs=env_kwargs))
-    eval_vec_env = VecNormalize(
-        make_vec_env(env, n_envs=eval_envs, env_kwargs=env_kwargs)
-    )
 
     hp = {
-        "ent_coef": 0.04,
+        "ent_coef": 0.01,
         "n_epochs": 5,
         "n_steps": 32 * num_envs,
         "batch_size": 256,
         "learning_rate": linear_schedule(0.003),
-        "verbose": 0,
+        "verbose": 2,
         "device": "auto",
         # "gamma": 0.93,
         # "gae_lambda": 0.99,
@@ -191,13 +208,13 @@ def main():
         total_timesteps=50_000_000,
         progress_bar=True,
         reset_num_timesteps=False,
-        callback=EvalCallback(model_name, eval_vec_env),
+        callback=EvalCallback(model_name),
         tb_log_name=model_name,
     )
 
     # result = evaluate_policy(model, eval_vec_env, return_episode_rewards=True)
     # print(result)
-    model.save(f"{model_name}.zip")
+    model.save(model_path / f"{model_name}.zip")
 
 
 if __name__ == "__main__":
