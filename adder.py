@@ -153,10 +153,6 @@ class AdditionEnv(gym.Env):
 
         self.counter += 1
         self.state = np.array(self.dataset[self.counter][:2])
-        # self.state[-1] = np.array([self.num1, self.num2, self.result, action, reward])
-        # self.num1, self.num2, self.result = self.dataset[self.counter]
-        # new_state = np.array([[self.num1, self.num2, -1, -1, -1]])
-        # self.state = np.concatenate((self.state, new_state), axis=0)[-5:]
         return self.state, reward, done, terminated, info
 
     def reset(self, seed=None, options=None):
@@ -212,8 +208,6 @@ def main():
         tb_log_name=model_name,
     )
 
-    # result = evaluate_policy(model, eval_vec_env, return_episode_rewards=True)
-    # print(result)
     model.save(model_path / f"{model_name}.zip")
 
 
